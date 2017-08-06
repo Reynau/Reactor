@@ -9,6 +9,11 @@
     </style>
 </head>
 <body>
+<audio id="audioElement" src="./music/Eminem - Lose Yourself.mp3"></audio>
+<button onclick="document.getElementById('audioElement').play()">Play the Audio</button>
+<button onclick="document.getElementById('audioElement').pause()">Pause the Audio</button>
+<button onclick="document.getElementById('audioElement').volume+=0.1">Increase Volume</button>
+<button onclick="document.getElementById('audioElement').volume-=0.1">Decrease Volume</button>
 <script src="js/bundle.js"></script>
 </body>
 </html>
