@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "clone": "^2.1.1",
     "three": "^0.86.0",
     "three-orbit-controls": "^82.1.0"
   },
