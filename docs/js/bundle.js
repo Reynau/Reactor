@@ -47330,13 +47330,15 @@ module.exports = getMusicData
 const THREE = require('three')
 
 function Sphere () {
-  let material = new THREE.MeshLambertMaterial( {
-    color: 0xffffff,
-    specular: 0x050505,
-    shininess: 100
-  } )
-  let geometry = new THREE.IcosahedronBufferGeometry(2, 2)
-  let sphere = new THREE.Mesh(geometry , material)
+
+  let sphereGeom = new THREE.IcosahedronBufferGeometry(2, 2)
+  let planetMaterial = new THREE.MeshPhongMaterial({color: 0xff44c8})
+  let wireFrameMat = new THREE.MeshBasicMaterial()
+  wireFrameMat.wireframe = true
+  wireFrameMat.visible = false
+
+  let sphere = THREE.SceneUtils.createMultiMaterialObject(sphereGeom, [planetMaterial, wireFrameMat])
+  sphere.geometry = sphereGeom
   console.log(sphere)
   return sphere
 }
@@ -47354,8 +47356,12 @@ let renderer = new THREE.WebGLRenderer()
 renderer.setSize( window.innerWidth, window.innerHeight )
 document.body.appendChild( renderer.domElement )
 
-let camera, scene, light, ambLight, materia, geometry, sphere, controls, basePositions
-let waveValue = 0
+let camera, scene, sphere, controls, basePositions
+let vertexsArray
+
+setScene()
+getUnrepeatedVertices()
+animate()
 
 function setScene () {
   camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 10000 )
@@ -47363,35 +47369,17 @@ function setScene () {
   camera.position.z = 10
 
   scene = new THREE.Scene()
-  scene.background = new THREE.Color("#f0f0f0")
+  scene.background = new THREE.Color("#202020")
 
-  light = new THREE.AmbientLight(0x909090)
-  scene.add(light)
+  // add subtle ambient lighting
+  let ambientLight = new THREE.AmbientLight(0x111111);
+  scene.add(ambientLight);
 
-  let bluePoint = new THREE.PointLight(0x0033ff, 3, 150)
-  bluePoint.position.set( 70, 5, 70 )
-  scene.add(bluePoint)
-
-  let greenPoint = new THREE.PointLight(0x33ff00, 1, 150)
-  greenPoint.position.set( -70, 5, 70 )
-  scene.add(greenPoint)
-
-  let redPoint = new THREE.PointLight(0xff3300, 1, 150)
-  redPoint.position.set( 0, 70, -70 )
-  scene.add(redPoint)
-
-  let yellowPoint = new THREE.PointLight(0x990099, 1, 150)
-  yellowPoint.position.set( 0, -70, 0 )
-  scene.add(yellowPoint)
-
-  scene.add(light)
-
-  // material = new THREE.MeshLambertMaterial( { color: 0xffffff, morphTargets: true } )
-  // material = new THREE.MeshBasicMaterial( { color: 0x555555, wireframe: true, morphTargets: true } )
-  // geometry = new THREE.SphereGeometry( 3, 10, 10 )
-  // initMorphs()
-  // sphere = new THREE.Mesh( geometry, material )
-  // scene.add( sphere )
+  // add spotlight for the shadows
+  let spotLight = new THREE.DirectionalLight(0xffffff);
+  spotLight.position.set(-20, 30, 40);
+  spotLight.intensity = 1.5;
+  scene.add(spotLight);
 
 
   sphere = new Sphere()
@@ -47402,54 +47390,71 @@ function setScene () {
   controls = new OrbitControls(camera)
 }
 
-function updateSphereVertices (musicArray) {
+function getUnrepeatedVertices () {
+  let positionsArray = sphere.geometry.attributes.position.array
+  let normalsArray = sphere.geometry.attributes.normal.array
+  let hash = {}
+
+  let count = 0
+  for (let i = 0; i < positionsArray.length; i += 3) {
+    let x = positionsArray[i]
+    let y = positionsArray[i+1]
+    let z = positionsArray[i+2]
+
+    let nx = normalsArray[i]
+    let ny = normalsArray[i+1]
+    let nz = normalsArray[i+2]
+
+    let hashVal = '' + x + y + z
+
+    if (hash[hashVal] === undefined) hash[hashVal] = []
+    hash[hashVal].push(i)
+    hash[hashVal].push(i+1)
+    hash[hashVal].push(i+2)
+    ++count
+  }
+
+  vertexsArray = []
+  for (let prop in hash) {
+    let vertex = hash[prop]
+    vertexsArray.push(vertex[0])
+    vertexsArray.push(vertex[1])
+    vertexsArray.push(vertex[2])
+  }
+}
+
+function updateSphereFaces2 (musicArray) {
+  let positionsArray = sphere.geometry.attributes.position.array
+  let normalsArray = sphere.geometry.attributes.normal.array
+  for (let i = 0; i < vertexsArray.length && i < musicArray.length; i += 3) {
+    let x = vertexsArray[i]
+    let y = vertexsArray[i+1]
+    let z = vertexsArray[i+2]
+
+    positionsArray[x] = basePositions[x] + normalsArray[x] * musicArray[i]
+    positionsArray[y] = basePositions[y] + normalsArray[y] * musicArray[i]
+    positionsArray[z] = basePositions[z] + normalsArray[z] * musicArray[i]
+  }
+  sphere.geometry.attributes.position.needsUpdate = true
+}
+
+function updateSphereFaces (musicArray) {
   let freq = 0
   let positionsArray = sphere.geometry.attributes.position.array
+  let normalsArray = sphere.geometry.attributes.normal.array
   for (let i = 0; i < positionsArray.length && freq < musicArray.length; i += 3) {
-    positionsArray[i] = basePositions[i] + musicArray[freq]
-    positionsArray[i+1] = basePositions[i+1] + musicArray[freq]
-    positionsArray[i+2] = basePositions[i+2] + musicArray[freq]
+    positionsArray[i] = basePositions[i] + normalsArray[i]*musicArray[freq]
+    positionsArray[i+1] = basePositions[i+1] + normalsArray[i+1]*musicArray[freq]
+    positionsArray[i+2] = basePositions[i+2] + normalsArray[i+2]*musicArray[freq]
 
     ++freq
   }
   sphere.geometry.attributes.position.needsUpdate = true
 }
 
-function initMorphs () {
-  for (let i = 0; i < geometry.vertices.length; i++) {
-    let vertices = []
-    for (let v = 0; v < geometry.vertices.length; v++ ) {
-      vertices.push(geometry.vertices[v].clone())
-      if (v === i) {
-        vertices[vertices.length - 1].x *= 2
-        vertices[vertices.length - 1].y *= 2
-        vertices[vertices.length - 1].z *= 2
-      }
-    }
-    geometry.morphTargets.push( { name: "morph" + i, vertices: vertices } );
-  }
-}
-
 function animate () {
   requestAnimationFrame( animate )
-  updateSphereVertices(getMusicData())
+  updateSphereFaces(getMusicData())
   renderer.render(scene, camera)
 }
-
-function updateVertices (musicDataArray) {
-  for (let i = 0; i < sphere.geometry.vertices.length && i < musicDataArray.length; i++) {
-    updateVertex(i, musicDataArray[i])
-  }
-}
-
-function updateVertex (i, musicFreq) {
-  console.log(musicFreq)
-  let newValue = waveValue + musicFreq
-  console.log(newValue)
-  sphere.morphTargetInfluences[i] = newValue
-}
-
-
-setScene()
-animate()
 },{"./AudioManipulator":7,"./Sphere":8,"clone":3,"three":6,"three-orbit-controls":5}]},{},[9]);

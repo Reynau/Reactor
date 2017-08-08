@@ -1,13 +1,15 @@
 const THREE = require('three')
 
 function Sphere () {
-  let material = new THREE.MeshLambertMaterial( {
-    color: 0xffffff,
-    specular: 0x050505,
-    shininess: 100
-  } )
-  let geometry = new THREE.IcosahedronBufferGeometry(2, 2)
-  let sphere = new THREE.Mesh(geometry , material)
+
+  let sphereGeom = new THREE.IcosahedronBufferGeometry(2, 2)
+  let planetMaterial = new THREE.MeshPhongMaterial({color: 0xff44c8})
+  let wireFrameMat = new THREE.MeshBasicMaterial()
+  wireFrameMat.wireframe = true
+  wireFrameMat.visible = false
+
+  let sphere = THREE.SceneUtils.createMultiMaterialObject(sphereGeom, [planetMaterial, wireFrameMat])
+  sphere.geometry = sphereGeom
   console.log(sphere)
   return sphere
 }
