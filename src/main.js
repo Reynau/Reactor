@@ -9,8 +9,27 @@ let renderer = new THREE.WebGLRenderer()
 renderer.setSize( window.innerWidth, window.innerHeight )
 document.body.appendChild( renderer.domElement )
 
-let camera, scene, sphere, controls, basePositions
+let camera, scene, sphere, basePositions
 let vertexsArray
+let update = updateSphereVertices
+
+let controls = new function() {
+  this.ballColor = '#ff44c8'
+  this.showWireFrame = false
+  this.modifyVertex = true
+}
+
+let gui = new dat.GUI();
+gui.addColor(controls, 'ballColor').onChange(function(e) {
+  sphere.planetMaterial.color.setStyle(e)
+})
+gui.add(controls, 'showWireFrame').onChange(function() {
+  sphere.wireFrameMat.visible = !sphere.wireFrameMat.visible
+})
+gui.add(controls, 'modifyVertex').onChange(function() {
+  if (update === updateSphereFaces) update = updateSphereVertices
+  else update = updateSphereFaces
+})
 
 setScene()
 getUnrepeatedVertices()
@@ -76,26 +95,36 @@ function getUnrepeatedVertices () {
   }
 }
 
-function updateSphereFaces2 (musicArray) {
+function updateSphereFaces (musicArray) {
   let positionsArray = sphere.geometry.attributes.position.array
   let normalsArray = sphere.geometry.attributes.normal.array
-  for (let i = 0; i < vertexsArray.length && i < musicArray.length; i += 3) {
-    let x = vertexsArray[i]
-    let y = vertexsArray[i+1]
-    let z = vertexsArray[i+2]
 
-    positionsArray[x] = basePositions[x] + normalsArray[x] * musicArray[i]
-    positionsArray[y] = basePositions[y] + normalsArray[y] * musicArray[i]
-    positionsArray[z] = basePositions[z] + normalsArray[z] * musicArray[i]
+  let freq = 0
+  for (let i = 0; i < positionsArray.length; i += 9) {
+    if (freq >= musicArray.length) freq = 0
+    positionsArray[ i ] = basePositions[ i ] + normalsArray[ i ]*musicArray[freq]
+    positionsArray[i+1] = basePositions[i+1] + normalsArray[i+1]*musicArray[freq]
+    positionsArray[i+2] = basePositions[i+2] + normalsArray[i+2]*musicArray[freq]
+
+    positionsArray[i+3] = basePositions[i+3] + normalsArray[i+3]*musicArray[freq]
+    positionsArray[i+4] = basePositions[i+4] + normalsArray[i+4]*musicArray[freq]
+    positionsArray[i+5] = basePositions[i+5] + normalsArray[i+5]*musicArray[freq]
+
+    positionsArray[i+6] = basePositions[i+6] + normalsArray[i+6]*musicArray[freq]
+    positionsArray[i+7] = basePositions[i+7] + normalsArray[i+7]*musicArray[freq]
+    positionsArray[i+8] = basePositions[i+8] + normalsArray[i+8]*musicArray[freq]
+
+    ++freq
   }
   sphere.geometry.attributes.position.needsUpdate = true
 }
 
-function updateSphereFaces (musicArray) {
+function updateSphereVertices (musicArray) {
   let freq = 0
   let positionsArray = sphere.geometry.attributes.position.array
   let normalsArray = sphere.geometry.attributes.normal.array
-  for (let i = 0; i < positionsArray.length && freq < musicArray.length; i += 3) {
+  for (let i = 0; i < positionsArray.length; i += 3) {
+    if (freq >= musicArray.length) freq = 0
     positionsArray[i] = basePositions[i] + normalsArray[i]*musicArray[freq]
     positionsArray[i+1] = basePositions[i+1] + normalsArray[i+1]*musicArray[freq]
     positionsArray[i+2] = basePositions[i+2] + normalsArray[i+2]*musicArray[freq]
@@ -107,6 +136,6 @@ function updateSphereFaces (musicArray) {
 
 function animate () {
   requestAnimationFrame( animate )
-  updateSphereFaces(getMusicData())
+  update(getMusicData())
   renderer.render(scene, camera)
 }
