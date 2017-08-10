@@ -47724,27 +47724,85 @@ module.exports = function( THREE ) {
 })));
 
 },{}],8:[function(require,module,exports){
-let audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-let analyser = audioCtx.createAnalyser()
-analyser.fftSize = 4096
 
-let audioElement = document.getElementById('audioElement')
-let audioSrc = audioCtx.createMediaElementSource(audioElement)
 
-audioSrc.connect(analyser)
-audioSrc.connect(audioCtx.destination)
+function AudioManipulator () {
+  let audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+  let analyser = audioCtx.createAnalyser()
+  analyser.fftSize = 4096
 
-let bufferLength = analyser.frequencyBinCount
-let dataArray = new Float32Array(bufferLength)
-analyser.getFloatFrequencyData(dataArray)
+  let audioElement = document.getElementById('audioElement')
+  let audioSrc = audioCtx.createMediaElementSource(audioElement)
 
-function getMusicData () {
-  analyser.getFloatTimeDomainData(dataArray)
-  return dataArray
+  audioSrc.connect(analyser)
+  audioSrc.connect(audioCtx.destination)
+
+  let bufferLength = analyser.frequencyBinCount
+  let dataArray = new Float32Array(bufferLength)
+
+  this.duration = null
+
+  audioElement.addEventListener("loadedmetadata", durationCallback(this))
+
+  function durationCallback (self) {
+    return (event) => {
+      self.duration = audioElement.duration
+      console.log('Duration is: ' + self.duration)
+    }
+  }
+
+  this.getMusicData = function () {
+    analyser.getFloatTimeDomainData(dataArray)
+    return dataArray
+  }
+
+  this.getDuration = function () {
+    return this.duration
+  }
 }
 
-module.exports = getMusicData
+module.exports = AudioManipulator
 },{}],9:[function(require,module,exports){
+function MusicLine (width) {
+  let canvas = document.getElementById("controllerCanvas")
+  let ctx = canvas.getContext("2d")
+
+  canvas.width = width
+  canvas.height = 50
+
+  ctx.lineWidth = 5
+  ctx.strokeStyle = "blue"
+
+  this.time = null
+  this.pixelsPerTimeUnit = null
+
+  this.pixels = 0
+
+  this.update = function () {
+    if (this.time == undefined) return
+    this.pixelsPerTimeUnit = width / this.time
+
+    if (this.pixels > width) return
+
+    console.log(this.pixels)
+    console.log(this.pixelsPerTimeUnit)
+
+    ctx.beginPath()
+    ctx.moveTo(this.pixels, 0)
+    ctx.lineTo(this.pixels + this.pixelsPerTimeUnit, 0)
+    ctx.stroke()
+
+    this.pixels += this.pixelsPerTimeUnit
+  }
+
+  this.setAudioTime = function (time) {
+    this.time = time
+    this.pixelsPerTimeUnit = width / time
+  }
+}
+
+module.exports = MusicLine
+},{}],10:[function(require,module,exports){
 const THREE = require('three')
 const SimplexNoise = require('simplex-noise')
 const clone = require('clone')
@@ -47803,27 +47861,35 @@ function Sphere () {
 }
 
 module.exports = Sphere
-},{"clone":3,"simplex-noise":5,"three":7}],10:[function(require,module,exports){
+},{"clone":3,"simplex-noise":5,"three":7}],11:[function(require,module,exports){
 const THREE = require('three')
 const OrbitControls = require('three-orbit-controls')(THREE)
 const clone = require('clone')
 
-const getMusicData = require('./AudioManipulator')
+const AudioManipulator = require('./AudioManipulator')
+const MusicLine = require('./MusicLine')
 const Sphere = require('./Sphere')
 
+let width = window.innerWidth / 3 * 2
+let height = window.innerHeight / 3 * 2
+
 let renderer = new THREE.WebGLRenderer()
-renderer.setSize( window.innerWidth, window.innerHeight )
+renderer.setSize(width, height)
 renderer.shadowMapEnabled = true
-document.body.appendChild( renderer.domElement )
+document.getElementById("renderer").appendChild(renderer.domElement)
 
 let camera, scene, sphere, basePositions
+let audioManipulator = new AudioManipulator()
+let musicLine = new MusicLine(document.getElementById("renderer").offsetWidth)
 let time = 0
 
 setScene()
-animate()
+window.onload = function () {
+  animate()
+}
 
-function setScene () {
-  camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 10000 )
+function setScene() {
+  camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 10000)
   camera.position.y = 0
   camera.position.z = 30
 
@@ -47849,10 +47915,15 @@ function setScene () {
   controls = new OrbitControls(camera)
 }
 
-function animate () {
-  requestAnimationFrame( animate )
-  sphere.update(getMusicData(), time)
+function animate() {
+  requestAnimationFrame(animate)
+  if (audioManipulator.getDuration() === null) return
+
+  let musicData = audioManipulator.getMusicData()
+  sphere.update(musicData, time)
+  musicLine.setAudioTime(audioManipulator.getDuration())
+  musicLine.update()
   renderer.render(scene, camera)
   ++time
 }
-},{"./AudioManipulator":8,"./Sphere":9,"clone":3,"three":7,"three-orbit-controls":6}]},{},[10]);
+},{"./AudioManipulator":8,"./MusicLine":9,"./Sphere":10,"clone":3,"three":7,"three-orbit-controls":6}]},{},[11]);

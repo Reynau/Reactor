@@ -2,22 +2,30 @@ const THREE = require('three')
 const OrbitControls = require('three-orbit-controls')(THREE)
 const clone = require('clone')
 
-const getMusicData = require('./AudioManipulator')
+const AudioManipulator = require('./AudioManipulator')
+const MusicLine = require('./MusicLine')
 const Sphere = require('./Sphere')
 
+let width = window.innerWidth / 3 * 2
+let height = window.innerHeight / 3 * 2
+
 let renderer = new THREE.WebGLRenderer()
-renderer.setSize( window.innerWidth, window.innerHeight )
+renderer.setSize(width, height)
 renderer.shadowMapEnabled = true
-document.body.appendChild( renderer.domElement )
+document.getElementById("renderer").appendChild(renderer.domElement)
 
 let camera, scene, sphere, basePositions
+let audioManipulator = new AudioManipulator()
+let musicLine = new MusicLine(document.getElementById("renderer").offsetWidth)
 let time = 0
 
 setScene()
-animate()
+window.onload = function () {
+  animate()
+}
 
-function setScene () {
-  camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 10000 )
+function setScene() {
+  camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 10000)
   camera.position.y = 0
   camera.position.z = 30
 
@@ -43,9 +51,14 @@ function setScene () {
   controls = new OrbitControls(camera)
 }
 
-function animate () {
-  requestAnimationFrame( animate )
-  sphere.update(getMusicData(), time)
+function animate() {
+  requestAnimationFrame(animate)
+  if (audioManipulator.getDuration() === null) return
+
+  let musicData = audioManipulator.getMusicData()
+  sphere.update(musicData, time)
+  musicLine.setAudioTime(audioManipulator.getDuration())
+  musicLine.update()
   renderer.render(scene, camera)
   ++time
 }
