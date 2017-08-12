@@ -5,17 +5,17 @@
     <title>Reactor</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://use.fontawesome.com/c8270c61d7.js"></script>
     <script type="text/javascript" src="js/dat.gui.min.js"></script>
 </head>
 <body>
     <div id="renderer"></div>
     <div id="controller"><canvas id="controllerCanvas"></canvas></div>
+    <div class="text-center">
+        <button id="repr_btn" class="repr_btn"><i class="fa fa-play" aria-hidden="true"></i></button>
+    </div>
 
-<audio id="audioElement" src="./music/Fleslit_-_Shooters.mp3"></audio>
-<button onclick="document.getElementById('audioElement').play()">Play the Audio</button>
-<button onclick="document.getElementById('audioElement').pause()">Pause the Audio</button>
-<button onclick="document.getElementById('audioElement').volume+=0.1">Increase Volume</button>
-<button onclick="document.getElementById('audioElement').volume-=0.1">Decrease Volume</button>
-<script src="js/bundle.js"></script>
+    <audio id="audioElement" src="./music/Fleslit_-_Shooters.mp3"></audio>
+    <script src="js/bundle.js"></script>
 </body>
 </html>

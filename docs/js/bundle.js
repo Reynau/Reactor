@@ -47882,6 +47882,7 @@ let camera, scene, sphere, basePositions
 let audioManipulator = new AudioManipulator()
 let musicLine = new MusicLine(width)
 let time = 0
+let musicState = false
 
 setScene()
 window.onload = function () {
@@ -47897,10 +47898,24 @@ window.onresize = function () {
   camera.updateProjectionMatrix()
 }
 
+document.getElementById('repr_btn').onclick = changeState
+
+function changeState () {
+  if (musicState) {
+    document.getElementById('audioElement').pause()
+    document.getElementById('repr_btn').innerHTML = '<i class="fa fa-play" aria-hidden="true"></i>'
+  }
+  else {
+    document.getElementById('audioElement').play()
+    document.getElementById('repr_btn').innerHTML = '<i class="fa fa-pause" aria-hidden="true"></i>'
+  }
+  musicState = !musicState
+}
+
 function setScene() {
   camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 10000)
   camera.position.y = 0
-  camera.position.z = 30
+  camera.position.z = 15
 
   scene = new THREE.Scene()
   scene.background = new THREE.Color("#202020")
@@ -47930,8 +47945,6 @@ function animate() {
 
   let musicData = audioManipulator.getMusicData()
   sphere.update(musicData, time)
-  musicLine.setAudioTime(audioManipulator.getDuration())
-  musicLine.update()
   renderer.render(scene, camera)
   ++time
 }
