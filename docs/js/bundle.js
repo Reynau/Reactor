@@ -47870,7 +47870,7 @@ const AudioManipulator = require('./AudioManipulator')
 const MusicLine = require('./MusicLine')
 const Sphere = require('./Sphere')
 
-let width = window.innerWidth / 3 * 2
+let width = document.getElementById('renderer').offsetWidth
 let height = window.innerHeight / 3 * 2
 
 let renderer = new THREE.WebGLRenderer()
@@ -47880,12 +47880,21 @@ document.getElementById("renderer").appendChild(renderer.domElement)
 
 let camera, scene, sphere, basePositions
 let audioManipulator = new AudioManipulator()
-let musicLine = new MusicLine(document.getElementById("renderer").offsetWidth)
+let musicLine = new MusicLine(width)
 let time = 0
 
 setScene()
 window.onload = function () {
   animate()
+}
+
+window.onresize = function () {
+  width = document.getElementById('renderer').offsetWidth
+  height = window.innerHeight / 3 * 2
+
+  renderer.setSize(width, height)
+  camera.aspect = width / height
+  camera.updateProjectionMatrix()
 }
 
 function setScene() {
